@@ -1,161 +1,88 @@
-## Technique Framework API (Spec-Compliant)
+## Technique Generator — Step‑by‑Step Quick Start (Non‑Technical)
 
-Implements Calls 1–4 and ingestion per the specification. Deterministic generation, strict validation, patching with diff + versioning, finalization with iteration limits, metrics, and append-only audit logs.
+Follow these steps exactly to run the app and generate techniques. No coding required.
 
-### Prerequisites
-- Python 3.11+ (Linux/macOS/Windows). Python 3.13 is supported.
-- pip available in your shell.
+### 1) Install prerequisites
+- Make sure Python is installed.
+  - Windows: download "Python 3" from the official site and complete install.
+  - macOS/Linux: Python 3 is usually available. If not, install it first.
 
-### Install
-- From the project root:
+### 2) Open the project folder
+- Locate the project folder on your computer.
+- Open a terminal (Windows PowerShell, macOS Terminal, or Linux shell) in that folder.
+
+### 3) Install the app
+Run this command in the terminal:
 ```bash
 pip install -r requirements.txt
 ```
-
-### Configure (optional)
-- Gemini API key for semantic audit (only used when invoked by callers):
-  - Linux/macOS (bash/zsh): `export GEMINI_API_KEY="your-key"`
-  - Windows PowerShell: `$env:GEMINI_API_KEY="your-key"`
-  - Windows cmd.exe: `set GEMINI_API_KEY=your-key`
-- Audit directory (default `./audit`):
-  - `export AUDIT_DIR="/path/to/audit"` (or Windows equivalent)
-
-### Run tests (what should happen)
-- From the project root:
+If you see an error about pip, try:
 ```bash
-pytest -q
+python -m pip install -r requirements.txt
 ```
-- Expected: all tests pass. Example: `7 passed in X.XXs`.
 
-### Run the API server
+### 4) Start the app
+Run this command in the terminal:
 ```bash
-uvicorn app.main:app --host 0.0.0.0 --port 8000
+uvicorn app.main:app --host 127.0.0.1 --port 8000
 ```
-- Important: `--host 0.0.0.0` binds the server to all interfaces. To access it locally on the same machine, open `http://127.0.0.1:8000` (not `http://0.0.0.0:8000`).
-- What you should see right away:
-  - `GET /` returns a small JSON with links to `/docs`, `/openapi.json`, and `/metrics`.
-  - `GET /healthz` returns `{ "status": "ok" }`.
-  - `GET /docs` opens the interactive Swagger UI where you can try all endpoints.
-  - `GET /metrics` returns counters and timings.
-  - `audit/log.jsonl` starts recording immutable events.
+Leave this window open while you use the app.
 
-### Quickstart: End-to-end workflow and expected outcomes
-All calls are JSON over HTTP. Use curl or any REST client.
+### 5) Open the app in your browser
+- Go to: `http://127.0.0.1:8000/docs`
+- This opens an interactive page where you can click buttons to run actions.
 
-1) Call 1 — Generate
-```bash
-curl -s -X POST http://127.0.0.1:8000/generateTechnique \
-  -H 'Content-Type: application/json' \
-  -d '{
-    "seed": "demo-seed-1",
-    "request_id": "req-1",
-    "name_uniqueness_required": true
-  }'
-```
-- You get `{ machine_data, human_text }`.
-- `human_text` strictly matches the template.
-- `machine_data.machine_data_hash` is a SHA-256 of canonical JSON.
-- Re-submitting the same `seed + request_id` returns the same content (deterministic).
-
-2) Call 2 — Validate
-```bash
-curl -s -X POST http://127.0.0.1:8000/validateTechnique \
-  -H 'Content-Type: application/json' \
-  -d '{
-    "machine_data": { ... },
-    "human_text": "..."
-  }'
-```
-- You get a `validation_report` with:
-  - `pass: true|false`, `score: 0..100`, `criteria[]`, `total_errors`, `total_warnings`.
-- If `pass==true` and `score>=95.0`, proceed to Finalize (Call 4). Otherwise, patch (Call 3).
-
-3) Call 3 — Patch (auto-patch deterministic)
-```bash
-curl -s -X POST http://127.0.0.1:8000/patchTechnique \
-  -H 'Content-Type: application/json' \
-  -d '{
-    "machine_data": { ... },
-    "human_text": "...",
-    "validation_report": { ... }
-  }'
-```
-- What happens:
-  - Auto-applies `criteria[].remediation.type=="auto_patch"` patches in order (error before warning, id lexical).
-  - Updates `version`, `parent_hash`, `updated_at`, recomputes `machine_data_hash`.
-  - Rebuilds `human_text` from machine data.
-  - Returns `{ machine_data, human_text, diff, version, machine_data_hash, status: "patched" }`.
-  - If patched data does not validate deterministically, returns `ERR_PATCH_VALIDATION_FAILED` (400).
-
-4) Call 2 again — Re-Validate
-- Repeat Call 2 with the patched data. If still failing and you remain under iteration limits, repeat Call 3.
-
-5) Call 4 — Finalize
-```bash
-curl -s -X POST http://127.0.0.1:8000/finalizeTechnique \
-  -H 'Content-Type: application/json' \
-  -d '{
-    "machine_data": { ... },
-    "human_text": "...",
-    "attempts_history": [ { "score": 98.0, "pass": true, ... } ]
-  }'
-```
-- Expected outcomes:
-  - If latest `score>=95.0` and `pass==true`, returns `final_state: "final_validated"`, `ingestion_ready: true`.
-  - If iteration limit reached or non-convergent, returns `final_state: "manual_review"`.
-
-6) Ingestion (separate contract)
-```bash
-curl -s -X POST http://127.0.0.1:8000/ingestTechnique \
-  -H 'Content-Type: application/json' \
-  -d '{
-    "machine_data": { ... },
-    "human_text": "..."
-  }'
-```
-- The service verifies the hash matches the payload.
-- On success, returns `ingestion_log_id`, `ingested_at`, `lore_entry_id`.
-
-### Determinism and constraints (what to expect)
-- `seed + request_id` → identical output for generation (including hash and `version=1`).
-- The canonical core concept text is embedded verbatim in `machine_data.core_concept_text`.
-- `human_text` is regenerated from `machine_data` and must match the exact template.
-- Enums and numeric bounds are enforced strictly.
-
-### Metrics
-- `GET /metrics` returns a JSON snapshot like:
+### 6) Generate a technique (the main thing you want)
+- On the docs page, find and click: `POST /generateTechnique`
+- Click the “Try it out” button.
+- Replace the example JSON with this (do not change the field names):
 ```json
 {
-  "counters": { "techniques_generated_total": 3 },
-  "gauges": {},
-  "timings_ms": { "generate_ms": [12.3], "validate_ms": [3.8] }
+  "seed": "demo-seed-1",
+  "request_id": "req-1",
+  "name_uniqueness_required": true
 }
 ```
+- Click “Execute”.
+- What you get back is your technique:
+  - `human_text`: formatted text you can read or display
+  - `machine_data`: the exact structured data
 
-### Audit logs
-- Default path: `./audit/log.jsonl` (set `AUDIT_DIR` to change).
-- Each line is a JSON object: `{ ts, action, actor_id, payload }`.
-- Actions include: `generate`, `validate`, `patch`, `finalize`, `ingest`.
+That’s it — you have generated a technique.
 
-### Gemini (semantic auditor)
-- If `GEMINI_API_KEY` is set, the semantic auditor is available to callers that choose to invoke it (the deterministic validator runs regardless). When not set, the app returns empty audit findings and continues.
+### Optional: Validate, finalize, and save
+If you want to go further (optional):
+1) Validate
+- Click `POST /validateTechnique` → “Try it out”.
+- Paste the `machine_data` and `human_text` you just received.
+- Click “Execute”. If `pass` is true and the score is high enough, you can finalize.
+
+2) Finalize
+- Click `POST /finalizeTechnique` → “Try it out”.
+- Paste `machine_data` and `human_text` again.
+- For `attempts_history`, paste the validation result you got in step 1 inside an array, like this:
+```json
+[
+  { "pass": true, "score": 98.0 }
+]
+```
+- Click “Execute”. If it says `final_validated`, it’s ready to save.
+
+3) Save (Ingest)
+- Click `POST /ingestTechnique` → “Try it out”.
+- Paste the same `machine_data` and `human_text`.
+- Click “Execute”. You’ll get an `ingestion_log_id` confirming it was saved.
+
+### Optional: Enable Gemini (for smarter audits)
+Only if you have a Gemini API key (not required to generate techniques):
+- Windows PowerShell: `$env:GEMINI_API_KEY="your-key"`
+- macOS/Linux: `export GEMINI_API_KEY="your-key"`
+Then start the app again (step 4).
 
 ### Troubleshooting
-- Can’t access `http://0.0.0.0:8000`
-  - `0.0.0.0` is a bind address. Use `http://127.0.0.1:8000` locally.
-  - On another device in the same network, use the host machine’s IP (e.g., `http://192.168.x.x:8000`).
-- ModuleNotFoundError: No module named `app`
-  - Ensure you run commands from the project root.
-  - `pytest.ini` and `pyproject.toml` set `pythonpath=.`. If still needed, set env: `export PYTHONPATH=.` (PowerShell: `$env:PYTHONPATH='.'`).
-- Pip install problems on Debian/Ubuntu (externally managed):
-  - Prefer a virtualenv; or use the system’s recommended approach. Standard `pip install -r requirements.txt` typically suffices on Windows/macOS.
-- Port conflicts: use a different port with `--port 8080`.
-
-### Expected error handling
-- On schema or hash mismatch, you receive a 400 with `error_code` and remediation hints.
-- Patch failures return `ERR_PATCH_VALIDATION_FAILED`.
-- Finalization with too many attempts returns `ERR_MAX_ITERATIONS_REACHED` and `final_state: manual_review`.
-
-### Security & integrity (operational)
-- All inputs are JSON; audit entries are append-only.
-- `machine_data_hash` is recomputed on every change; used as an immutable key and for optimistic concurrency.
+- The page won’t open
+  - Make sure you used `http://127.0.0.1:8000/docs` and the app is still running in the terminal.
+- Pip errors
+  - Try `python -m pip install -r requirements.txt` instead of `pip`.
+- Still stuck?
+  - Close the app (Ctrl+C in the terminal) and repeat steps 3–5.
