@@ -3,7 +3,7 @@ import os
 from datetime import datetime, timezone
 from typing import Any, Dict
 
-AUDIT_DIR = "/workspace/audit"
+AUDIT_DIR = os.getenv("AUDIT_DIR", os.path.join(os.getcwd(), "audit"))
 AUDIT_FILE = os.path.join(AUDIT_DIR, "log.jsonl")
 
 os.makedirs(AUDIT_DIR, exist_ok=True)

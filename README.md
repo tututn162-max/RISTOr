@@ -5,14 +5,16 @@ Technique Framework API (Spec-Compliant)
 
 Setup
 
-- Python 3.13
-- Install deps: `pip3 install -r /workspace/requirements.txt`
+- Python 3.11+ (Linux/macOS/Windows). For Python 3.13, use `pydantic==2.10+`.
+- Install deps: `pip install -r requirements.txt`
+- Windows: ensure project root is on `PYTHONPATH` (pytest config included) or run `set PYTHONPATH=.` in PowerShell.
 - Run tests: `pytest -q`
 - Start server: `uvicorn app.main:app --host 0.0.0.0 --port 8000`
 
 Environment
 
 - Optional Gemini: set `GEMINI_API_KEY` for semantic auditing.
+- Audit directory: set `AUDIT_DIR` or defaults to `./audit`.
 
 Notes
 
