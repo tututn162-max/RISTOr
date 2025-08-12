@@ -37,7 +37,7 @@ def call_semantic_audit(machine_data: Dict[str, Any], human_text: str, failing_w
     if client is None:
         return {"issues": [], "recommended_patches": []}
     prompt = semantic_audit_prompt(machine_data, human_text, failing_warnings)
-    model = client.GenerativeModel("gemini-1.5-pro-latest")
+    model = client.GenerativeModel("gemini-2.5-pro")
     resp = model.generate_content(prompt)
     try:
         text = resp.text
@@ -65,7 +65,7 @@ def call_targeted_rewrite(machine_data: Dict[str, Any], failing_criteria: List[D
     if client is None:
         return {"error": "LLM unavailable"}
     prompt = targeted_rewrite_prompt(machine_data, failing_criteria)
-    model = client.GenerativeModel("gemini-1.5-pro-latest")
+    model = client.GenerativeModel("gemini-2.5-pro")
     resp = model.generate_content(prompt)
     try:
         text = resp.text
