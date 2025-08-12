@@ -25,6 +25,22 @@ from .audit_log import append_audit
 app = FastAPI(title="Technique Framework API", version="1.0.0")
 
 
+@app.get("/")
+def root():
+    return JSONResponse({
+        "status": "ok",
+        "message": "Technique Framework API is running.",
+        "docs": "/docs",
+        "openapi": "/openapi.json",
+        "metrics": "/metrics"
+    })
+
+
+@app.get("/healthz")
+def healthz():
+    return {"status": "ok"}
+
+
 @app.get("/metrics")
 def get_metrics():
     return metrics.snapshot()

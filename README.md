@@ -31,8 +31,11 @@ pytest -q
 ```bash
 uvicorn app.main:app --host 0.0.0.0 --port 8000
 ```
-- What should happen:
-  - Server listens on port 8000.
+- Important: `--host 0.0.0.0` binds the server to all interfaces. To access it locally on the same machine, open `http://127.0.0.1:8000` (not `http://0.0.0.0:8000`).
+- What you should see right away:
+  - `GET /` returns a small JSON with links to `/docs`, `/openapi.json`, and `/metrics`.
+  - `GET /healthz` returns `{ "status": "ok" }`.
+  - `GET /docs` opens the interactive Swagger UI where you can try all endpoints.
   - `GET /metrics` returns counters and timings.
   - `audit/log.jsonl` starts recording immutable events.
 
@@ -41,7 +44,7 @@ All calls are JSON over HTTP. Use curl or any REST client.
 
 1) Call 1 — Generate
 ```bash
-curl -s -X POST http://localhost:8000/generateTechnique \
+curl -s -X POST http://127.0.0.1:8000/generateTechnique \
   -H 'Content-Type: application/json' \
   -d '{
     "seed": "demo-seed-1",
@@ -56,7 +59,7 @@ curl -s -X POST http://localhost:8000/generateTechnique \
 
 2) Call 2 — Validate
 ```bash
-curl -s -X POST http://localhost:8000/validateTechnique \
+curl -s -X POST http://127.0.0.1:8000/validateTechnique \
   -H 'Content-Type: application/json' \
   -d '{
     "machine_data": { ... },
@@ -69,7 +72,7 @@ curl -s -X POST http://localhost:8000/validateTechnique \
 
 3) Call 3 — Patch (auto-patch deterministic)
 ```bash
-curl -s -X POST http://localhost:8000/patchTechnique \
+curl -s -X POST http://127.0.0.1:8000/patchTechnique \
   -H 'Content-Type: application/json' \
   -d '{
     "machine_data": { ... },
@@ -89,7 +92,7 @@ curl -s -X POST http://localhost:8000/patchTechnique \
 
 5) Call 4 — Finalize
 ```bash
-curl -s -X POST http://localhost:8000/finalizeTechnique \
+curl -s -X POST http://127.0.0.1:8000/finalizeTechnique \
   -H 'Content-Type: application/json' \
   -d '{
     "machine_data": { ... },
@@ -103,7 +106,7 @@ curl -s -X POST http://localhost:8000/finalizeTechnique \
 
 6) Ingestion (separate contract)
 ```bash
-curl -s -X POST http://localhost:8000/ingestTechnique \
+curl -s -X POST http://127.0.0.1:8000/ingestTechnique \
   -H 'Content-Type: application/json' \
   -d '{
     "machine_data": { ... },
@@ -138,6 +141,9 @@ curl -s -X POST http://localhost:8000/ingestTechnique \
 - If `GEMINI_API_KEY` is set, the semantic auditor is available to callers that choose to invoke it (the deterministic validator runs regardless). When not set, the app returns empty audit findings and continues.
 
 ### Troubleshooting
+- Can’t access `http://0.0.0.0:8000`
+  - `0.0.0.0` is a bind address. Use `http://127.0.0.1:8000` locally.
+  - On another device in the same network, use the host machine’s IP (e.g., `http://192.168.x.x:8000`).
 - ModuleNotFoundError: No module named `app`
   - Ensure you run commands from the project root.
   - `pytest.ini` and `pyproject.toml` set `pythonpath=.`. If still needed, set env: `export PYTHONPATH=.` (PowerShell: `$env:PYTHONPATH='.'`).
